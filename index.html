@@ -1,0 +1,119 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>تحقق من النص بالصوت</title>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
+  <style>
+    body { font-family: Arial; text-align: center; padding: 20px; background: #f0f0f0; direction: rtl; }
+    #canvas { display: none; }
+    #chatBox {
+      background: white;
+      width: 90%;
+      max-width: 600px;
+      margin: auto;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      text-align: right;
+    }
+    #chatBox div {
+      margin: 10px 0;
+    }
+    .user { color: blue; font-weight: bold; }
+    .sys { color: green; }
+    button { padding: 10px 20px; font-size: 16px; margin-top: 10px; cursor: pointer; }
+    input { margin-bottom: 15px; }
+    mark { background: yellow; }
+  </style>
+</head>
+<body>
+
+  <h2>🖼️ تحدث بما في الصورة</h2>
+
+  <input type="file" id="imageInput" accept="image/*"><br>
+  <button onclick="startListening()">🎙️ اضغط وتحدث</button>
+  <canvas id="canvas"></canvas>
+
+  <div id="chatBox">
+    <div class="sys">⬆️ ارفع صورة تحتوي على نص عربي</div>
+  </div>
+
+  <audio id="beep" src="https://www.soundjay.com/buttons/sounds/beep-07.mp3"></audio>
+
+  <script>
+    const chatBox = document.getElementById('chatBox');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let extractedText = '';
+
+    function addMessage(text, sender = 'sys') {
+      const div = document.createElement('div');
+      div.className = sender;
+      div.innerHTML = text;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    document.getElementById('imageInput').addEventListener('change', async function () {
+      const file = this.files[0];
+      const img = new Image();
+      img.onload = async () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+
+        addMessage("📄 جاري قراءة النص من الصورة...", "sys");
+
+        const result = await Tesseract.recognize(img, 'ara', {
+          logger: m => console.log(m)
+        });
+        extractedText = result.data.text.trim();
+        addMessage("📜 النص الموجود في الصورة:<br>" + extractedText, "sys");
+      };
+      img.src = URL.createObjectURL(file);
+    });
+
+    function startListening() {
+      if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+        alert('المتصفح لا يدعم التعرف على الصوت!');
+        return;
+      }
+
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = 'ar-EG';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      addMessage("🎙️ استمع الآن...", "sys");
+      recognition.start();
+
+      recognition.onresult = function (event) {
+        const spoken = event.results[0][0].transcript.trim();
+        addMessage("🗣️ أنت قلت: " + spoken, "user");
+
+        const loweredSpoken = spoken.toLowerCase();
+        const loweredText = extractedText.toLowerCase();
+
+        if (loweredText.includes(loweredSpoken)) {
+          const highlighted = extractedText.replace(
+            new RegExp(`(${spoken})`, 'gi'),
+            '<mark>$1</mark>'
+          );
+          addMessage("✅ الكلام موجود داخل الصورة!", "sys");
+          addMessage("🔍 النص مع التحديد:<br>" + highlighted, "sys");
+        } else {
+          document.getElementById('beep').play();
+          addMessage("❌ الكلام غير موجود في النص المستخرج من الصورة!", "sys");
+        }
+      };
+
+      recognition.onerror = function (event) {
+        addMessage("⚠️ حدث خطأ في التعرف على الصوت: " + event.error, "sys");
+      };
+    }
+  </script>
+
+</body>
+</html>
