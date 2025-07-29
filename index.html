@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -8,6 +7,7 @@
   <style>
     body { font-family: Arial; text-align: center; padding: 20px; background: #f0f0f0; direction: rtl; }
     #canvas { display: none; }
+    #imageDisplay { width: 100%; max-width: 600px; margin-top: 15px; }
     #chatBox {
       background: white;
       width: 90%;
@@ -26,6 +26,7 @@
     button { padding: 10px 20px; font-size: 16px; margin-top: 10px; cursor: pointer; }
     input { margin-bottom: 15px; }
     mark { background: yellow; }
+    .highlight { text-decoration: underline; color: red; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -33,8 +34,8 @@
   <h2>🖼️ تحدث بما في الصورة</h2>
 
   <input type="file" id="imageInput" accept="image/*"><br>
+  <img id="imageDisplay" src="" alt="صورة النص" />
   <button onclick="startListening()">🎙️ اضغط وتحدث</button>
-  <canvas id="canvas"></canvas>
 
   <div id="chatBox">
     <div class="sys">⬆️ ارفع صورة تحتوي على نص عربي</div>
@@ -44,7 +45,9 @@
 
   <script>
     const chatBox = document.getElementById('chatBox');
-    const canvas = document.getElementById('canvas');
+    const imageInput = document.getElementById('imageInput');
+    const imageDisplay = document.getElementById('imageDisplay');
+    const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     let extractedText = '';
 
@@ -56,10 +59,11 @@
       chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    document.getElementById('imageInput').addEventListener('change', async function () {
+    imageInput.addEventListener('change', async function () {
       const file = this.files[0];
       const img = new Image();
       img.onload = async () => {
+        imageDisplay.src = img.src; // عرض الصورة في الموقع
         canvas.width = img.width;
         canvas.height = img.height;
         ctx.drawImage(img, 0, 0);
@@ -97,9 +101,10 @@
         const loweredText = extractedText.toLowerCase();
 
         if (loweredText.includes(loweredSpoken)) {
+          // إضافة التحديد على الكلام الذي قيل
           const highlighted = extractedText.replace(
             new RegExp(`(${spoken})`, 'gi'),
-            '<mark>$1</mark>'
+            '<span class="highlight">$1</span>'
           );
           addMessage("✅ الكلام موجود داخل الصورة!", "sys");
           addMessage("🔍 النص مع التحديد:<br>" + highlighted, "sys");
