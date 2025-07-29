@@ -6,7 +6,6 @@
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
   <style>
     body { font-family: Arial; text-align: center; padding: 20px; background: #f0f0f0; direction: rtl; }
-    #canvas { display: none; }
     #imageDisplay { width: 100%; max-width: 600px; margin-top: 15px; }
     #chatBox {
       background: white;
@@ -25,7 +24,6 @@
     .sys { color: green; }
     button { padding: 10px 20px; font-size: 16px; margin-top: 10px; cursor: pointer; }
     input { margin-bottom: 15px; }
-    mark { background: yellow; }
     .highlight { text-decoration: underline; color: red; font-weight: bold; }
   </style>
 </head>
@@ -33,6 +31,7 @@
 
   <h2>🖼️ تحدث بما في الصورة</h2>
 
+  <!-- رفع الصورة -->
   <input type="file" id="imageInput" accept="image/*"><br>
   <img id="imageDisplay" src="" alt="صورة النص" />
   <button onclick="startListening()">🎙️ اضغط وتحدث</button>
@@ -80,6 +79,11 @@
     });
 
     function startListening() {
+      if (imageDisplay.src === "") {
+        addMessage("⚠️ يجب إدراج صورة أولاً!", "sys");
+        return;
+      }
+
       if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
         alert('المتصفح لا يدعم التعرف على الصوت!');
         return;
@@ -109,7 +113,7 @@
           addMessage("✅ الكلام موجود داخل الصورة!", "sys");
           addMessage("🔍 النص مع التحديد:<br>" + highlighted, "sys");
         } else {
-          document.getElementById('beep').play();
+          document.getElementById('beep').play(); // صوت تنبيه
           addMessage("❌ الكلام غير موجود في النص المستخرج من الصورة!", "sys");
         }
       };
